@@ -1,5 +1,24 @@
 # Release Notes
 
+## v0.1.4 — 2026-06-19
+
+### Features
+- Document count displayed in UI header ("N documents indexed")
+- `GET /api/count` endpoint returns total indexed document count
+- `DELETE /api/documents/:id` endpoint to remove a document by UUID (requires `INGEST_SECRET`)
+- Seed script skips ingestion if documents already exist — prevents duplicates on re-runs
+
+### Monitoring
+- Sentry error monitoring integrated via `@sentry/nextjs`
+- Global error boundary captures unhandled errors
+- 10% trace sampling rate
+
+### Docs
+- Added `CONTRIBUTING.md` with local setup instructions
+- Added live demo badge to `README.md`
+
+---
+
 ## v0.1.3 — 2026-06-19
 
 ### Security
