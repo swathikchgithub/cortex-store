@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Result {
   title: string;
@@ -18,10 +18,17 @@ type Mode = "semantic" | "hybrid";
 export default function Home() {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<Mode>("semantic");
+  const [docCount, setDocCount] = useState<number | null>(null);
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/count")
+      .then((r) => r.json())
+      .then((d) => { if (d.ok) setDocCount(d.count); });
+  }, []);
 
   async function search(e: React.FormEvent) {
     e.preventDefault();
@@ -76,6 +83,9 @@ export default function Home() {
           </h1>
           <p className="mt-1 text-sm text-gray-500">
             Semantic document search · Weaviate + OpenAI embeddings
+            {docCount !== null && (
+              <span className="ml-2 text-gray-400">· {docCount} documents indexed</span>
+            )}
           </p>
         </div>
 

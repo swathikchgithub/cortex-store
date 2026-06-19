@@ -177,3 +177,35 @@ export async function hybridSearch(
   if (json.errors) throw new Error(JSON.stringify(json.errors));
   return json.data?.Get?.Document ?? [];
 }
+
+export async function getDocumentCount(): Promise<number> {
+  const query = `{ Aggregate { Document { meta { count } } } }`;
+  const res = await fetch(`${base()}/v1/graphql`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ query }),
+  });
+  if (!res.ok) throw new Error(`Count failed: ${await res.text()}`);
+  const json = await res.json();
+  return json.data?.Aggregate?.Document?.[0]?.meta?.count ?? 0;
+}
+
+export async function deleteDocument(id: string): Promise<void> {
+  const res = await fetch(`${base()}/v1/objects/Document/${id}`, {
+    method: "DELETE",
+    headers: headers(),
+  });
+  if (!res.ok && res.status !== 404) {
+    throw new Error(`Delete failed: ${await res.text()}`);
+  }
+}
+
+export async function getDocumentIds(): Promise<string[]> {
+  const res = await fetch(
+    `${base()}/v1/objects?class=Document&limit=1000&fields=id`,
+    { headers: headers() }
+  );
+  if (!res.ok) throw new Error(`List failed: ${await res.text()}`);
+  const json = await res.json();
+  return (json.objects ?? []).map((o: any) => o.id);
+}

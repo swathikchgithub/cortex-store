@@ -4,7 +4,7 @@
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
-import { initSchema, batchAddDocuments } from "../lib/weaviate";
+import { initSchema, batchAddDocuments, getDocumentCount } from "../lib/weaviate";
 import { embedBatch } from "../lib/embeddings";
 
 const SAMPLE_DOCS = [
@@ -74,6 +74,13 @@ async function main() {
   console.log("Initializing schema...");
   const schemaResult = await initSchema();
   console.log("Schema:", schemaResult.status ?? "created");
+
+  const existing = await getDocumentCount();
+  if (existing > 0) {
+    console.log(`\nSkipping seed — ${existing} documents already in Weaviate.`);
+    console.log("To re-seed, delete all documents first or wipe the schema.");
+    return;
+  }
 
   const texts = SAMPLE_DOCS.map((d) => `${d.title}\n\n${d.content}`);
   console.log(`\nEmbedding ${texts.length} documents (single API call)...`);

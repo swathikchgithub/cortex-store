@@ -1,5 +1,7 @@
 # Cortex Store
 
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://cortex-store-sigma.vercel.app)
+
 Semantic document search built with Next.js, Weaviate, and OpenAI embeddings. Finds documents by meaning, not keyword matching.
 
 ## What it does
