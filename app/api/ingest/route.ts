@@ -4,6 +4,11 @@ import { ingestLimiter } from "@/lib/ratelimit";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
+  const token = req.headers.get("authorization")?.replace("Bearer ", "");
+  if (token !== process.env.INGEST_SECRET) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
   const ip = req.headers.get("x-forwarded-for") ?? "anonymous";
   const { success } = await ingestLimiter.limit(ip);
   if (!success) {
