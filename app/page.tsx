@@ -1,65 +1,132 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+
+interface Result {
+  title: string;
+  content: string;
+  source: string;
+  certainty: number;
+  distance: number;
+}
 
 export default function Home() {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<Result[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [searched, setSearched] = useState(false);
+
+  async function search(e: React.FormEvent) {
+    e.preventDefault();
+    if (!query.trim()) return;
+
+    setLoading(true);
+    setError("");
+    setSearched(false);
+
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error);
+      setResults(data.results);
+      setSearched(true);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function certaintyColor(c: number) {
+    if (c >= 0.85) return "text-green-600 bg-green-50";
+    if (c >= 0.70) return "text-yellow-700 bg-yellow-50";
+    return "text-orange-600 bg-orange-50";
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen bg-gray-50">
+      <div className="max-w-2xl mx-auto px-4 py-12">
+
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+            Vector Search
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-1 text-sm text-gray-500">
+            Semantic document search · Weaviate + OpenAI embeddings
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+
+        {/* Search form */}
+        <form onSubmit={search} className="flex gap-2 mb-8">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="e.g. how does approximate nearest neighbor search work?"
+            className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <button
+            type="submit"
+            disabled={loading || !query.trim()}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+            {loading ? "Searching…" : "Search"}
+          </button>
+        </form>
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700 text-sm">
+            <span className="font-medium">Error:</span> {error}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {searched && results.length === 0 && (
+          <p className="text-gray-500 text-sm text-center py-8">
+            No results above the similarity threshold. Try rephrasing your query.
+          </p>
+        )}
+
+        {/* Results */}
+        <div className="space-y-4">
+          {results.map((r, i) => (
+            <div
+              key={i}
+              className="bg-white border border-gray-200 rounded-lg p-5 shadow-sm"
+            >
+              <div className="flex justify-between items-start gap-3 mb-2">
+                <h2 className="font-semibold text-gray-900 text-sm leading-snug">
+                  {r.title}
+                </h2>
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${certaintyColor(r.certainty)}`}
+                >
+                  {(r.certainty * 100).toFixed(1)}%
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+                {r.content}
+              </p>
+              {r.source && (
+                <p className="text-xs text-gray-400 mt-3 font-mono">{r.source}</p>
+              )}
+            </div>
+          ))}
         </div>
-      </main>
-    </div>
+
+        {/* Hint */}
+        {!searched && !loading && (
+          <div className="mt-12 text-center text-xs text-gray-400 space-y-1">
+            <p>Try: &ldquo;what is HNSW&rdquo; · &ldquo;cosine vs euclidean&rdquo; · &ldquo;RAG pattern&rdquo;</p>
+            <p>
+              Run <code className="bg-gray-100 px-1 rounded">npx tsx scripts/seed.ts</code> to load sample documents first.
+            </p>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }

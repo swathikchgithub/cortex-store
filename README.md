@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cortex Store
 
-## Getting Started
+Semantic document search built with Next.js, Weaviate, and OpenAI embeddings. Finds documents by meaning, not keyword matching.
 
-First, run the development server:
+## What it does
+
+- Converts text into 1536-dimension vectors using OpenAI `text-embedding-3-small`
+- Stores and indexes vectors in Weaviate using HNSW for fast approximate nearest neighbor search
+- Supports semantic search, hybrid search (vector + BM25), and cosine similarity scoring
+- Provides a REST API for ingesting and querying documents
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend / API | Next.js 16 (App Router) |
+| Vector database | Weaviate (Docker / Railway) |
+| Embedding model | OpenAI `text-embedding-3-small` |
+| Styling | Tailwind CSS v4 |
+
+## Prerequisites
+
+- Node.js 20+
+- Docker (for local Weaviate)
+- OpenAI API key
+
+## Local setup
+
+**1. Clone and install**
+
+```bash
+git clone <repo-url>
+cd cortex-store
+npm install
+```
+
+**2. Set environment variables**
+
+```bash
+cp .env.example .env.local
+```
+
+Edit `.env.local`:
+
+```
+OPENAI_API_KEY=your_openai_api_key
+WEAVIATE_URL=http://localhost:8080
+```
+
+**3. Start Weaviate**
+
+```bash
+docker-compose up -d
+```
+
+**4. Initialize the schema and seed documents**
+
+```bash
+npx tsx scripts/seed.ts
+```
+
+**5. Run the dev server**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### `POST /api/ingest`
 
-## Learn More
+Add a document to the vector index.
 
-To learn more about Next.js, take a look at the following resources:
+```json
+{
+  "title": "Document title",
+  "content": "Document body text",
+  "source": "optional-source-label"
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### `GET /api/search?q=your+query&limit=5`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Search for documents by semantic similarity. Returns results ranked by cosine certainty.
 
-## Deploy on Vercel
+### `POST /api/init`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Initialize the Weaviate schema (called automatically by the seed script).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Docs
+
+| Document | Description |
+|---|---|
+| [docs/PRD.md](./docs/PRD.md) | Product requirements — goals, user flows, success criteria |
+| [docs/TDD.md](./docs/TDD.md) | Technical design — architecture, components, data model |
+| [docs/DEMO.md](./docs/DEMO.md) | Step-by-step demo walkthrough |
+
+## Deployment
+
+See [RELEASE_NOTES.md](./RELEASE_NOTES.md) for version history.
+
+For Vercel deployment, set the following environment variables in the Vercel dashboard:
+
+- `OPENAI_API_KEY`
+- `WEAVIATE_URL` (your Railway or hosted Weaviate instance URL)
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
