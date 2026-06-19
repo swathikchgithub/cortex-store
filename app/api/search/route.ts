@@ -1,4 +1,4 @@
-import { searchDocuments } from "@/lib/weaviate";
+import { searchDocuments, hybridSearch } from "@/lib/weaviate";
 import { embed } from "@/lib/embeddings";
 import { searchLimiter } from "@/lib/ratelimit";
 import { NextRequest, NextResponse } from "next/server";
@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   try {
     const q = req.nextUrl.searchParams.get("q");
     const limit = parseInt(req.nextUrl.searchParams.get("limit") ?? "5");
+    const mode = req.nextUrl.searchParams.get("mode") ?? "semantic";
 
     if (!q) {
       return NextResponse.json(
@@ -25,9 +26,14 @@ export async function GET(req: NextRequest) {
     }
 
     const vector = await embed(q);
-    const results = await searchDocuments(vector, Math.min(limit, 20));
 
-    return NextResponse.json({ ok: true, results, query: q });
+    if (mode === "hybrid") {
+      const results = await hybridSearch(q, vector, Math.min(limit, 20));
+      return NextResponse.json({ ok: true, results, query: q, mode });
+    }
+
+    const results = await searchDocuments(vector, Math.min(limit, 20));
+    return NextResponse.json({ ok: true, results, query: q, mode });
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 });
   }

@@ -6,12 +6,18 @@ interface Result {
   title: string;
   content: string;
   source: string;
-  certainty: number;
-  distance: number;
+  // semantic mode
+  certainty?: number;
+  distance?: number;
+  // hybrid mode
+  _additional?: { score: string };
 }
+
+type Mode = "semantic" | "hybrid";
 
 export default function Home() {
   const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<Mode>("semantic");
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,7 +32,9 @@ export default function Home() {
     setSearched(false);
 
     try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(
+        `/api/search?q=${encodeURIComponent(query)}&mode=${mode}`
+      );
       const data = await res.json();
       if (!data.ok) throw new Error(data.error);
       setResults(data.results);
@@ -38,10 +46,23 @@ export default function Home() {
     }
   }
 
-  function certaintyColor(c: number) {
-    if (c >= 0.85) return "text-green-600 bg-green-50";
-    if (c >= 0.70) return "text-yellow-700 bg-yellow-50";
-    return "text-orange-600 bg-orange-50";
+  function scoreLabel(r: Result): string | null {
+    if (mode === "semantic" && r.certainty != null) {
+      return `${(r.certainty * 100).toFixed(1)}%`;
+    }
+    if (mode === "hybrid" && r._additional?.score != null) {
+      return `score ${parseFloat(r._additional.score).toFixed(3)}`;
+    }
+    return null;
+  }
+
+  function scoreBadgeColor(r: Result): string {
+    if (mode === "semantic" && r.certainty != null) {
+      if (r.certainty >= 0.85) return "text-green-600 bg-green-50";
+      if (r.certainty >= 0.70) return "text-yellow-700 bg-yellow-50";
+      return "text-orange-600 bg-orange-50";
+    }
+    return "text-blue-600 bg-blue-50";
   }
 
   return (
@@ -51,7 +72,7 @@ export default function Home() {
         {/* Header */}
         <div className="mb-10">
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Vector Search
+            Cortex Store
           </h1>
           <p className="mt-1 text-sm text-gray-500">
             Semantic document search · Weaviate + OpenAI embeddings
@@ -59,7 +80,7 @@ export default function Home() {
         </div>
 
         {/* Search form */}
-        <form onSubmit={search} className="flex gap-2 mb-8">
+        <form onSubmit={search} className="flex gap-2 mb-4">
           <input
             type="text"
             value={query}
@@ -76,6 +97,23 @@ export default function Home() {
           </button>
         </form>
 
+        {/* Mode toggle */}
+        <div className="flex gap-1 mb-8">
+          {(["semantic", "hybrid"] as Mode[]).map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                mode === m
+                  ? "bg-blue-600 text-white"
+                  : "bg-white border border-gray-300 text-gray-500 hover:border-gray-400"
+              }`}
+            >
+              {m === "semantic" ? "Semantic" : "Hybrid (semantic + keyword)"}
+            </button>
+          ))}
+        </div>
+
         {/* Error */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 text-red-700 text-sm">
@@ -86,7 +124,7 @@ export default function Home() {
         {/* Empty state */}
         {searched && results.length === 0 && (
           <p className="text-gray-500 text-sm text-center py-8">
-            No results above the similarity threshold. Try rephrasing your query.
+            No results found. Try rephrasing your query.
           </p>
         )}
 
@@ -101,11 +139,13 @@ export default function Home() {
                 <h2 className="font-semibold text-gray-900 text-sm leading-snug">
                   {r.title}
                 </h2>
-                <span
-                  className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${certaintyColor(r.certainty)}`}
-                >
-                  {(r.certainty * 100).toFixed(1)}%
-                </span>
+                {scoreLabel(r) && (
+                  <span
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${scoreBadgeColor(r)}`}
+                  >
+                    {scoreLabel(r)}
+                  </span>
+                )}
               </div>
               <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
                 {r.content}
@@ -121,9 +161,6 @@ export default function Home() {
         {!searched && !loading && (
           <div className="mt-12 text-center text-xs text-gray-400 space-y-1">
             <p>Try: &ldquo;what is HNSW&rdquo; · &ldquo;cosine vs euclidean&rdquo; · &ldquo;RAG pattern&rdquo;</p>
-            <p>
-              Run <code className="bg-gray-100 px-1 rounded">npx tsx scripts/seed.ts</code> to load sample documents first.
-            </p>
           </div>
         )}
       </div>
