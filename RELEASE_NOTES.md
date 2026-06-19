@@ -1,5 +1,13 @@
 # Release Notes
 
+## v0.1.1 — 2026-06-19
+
+### Security
+- Locked down Weaviate with API key authentication — anonymous access disabled
+- `WEAVIATE_API_KEY` required on all server-side requests to Weaviate
+
+---
+
 ## v0.1.0 — 2026-06-18
 
 Initial release.
