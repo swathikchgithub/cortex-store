@@ -1,5 +1,17 @@
 # Release Notes
 
+## v0.1.2 — 2026-06-19
+
+### Features
+- Hybrid search toggle in UI — blends vector similarity and BM25 keyword matching (alpha: 0.5)
+- Search mode selector pill buttons (Semantic / Hybrid) with per-mode score badges
+- `mode` query param added to `GET /api/search` — accepts `semantic` (default) or `hybrid`
+
+### Security
+- Rate limiting on `/api/search` (20 req/min) and `/api/ingest` (5 req/min) via Upstash Redis
+
+---
+
 ## v0.1.1 — 2026-06-19
 
 ### Security
