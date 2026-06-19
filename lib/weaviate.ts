@@ -4,15 +4,22 @@ const base = () => {
   return url;
 };
 
-const headers = { "Content-Type": "application/json" };
+const headers = () => {
+  const apiKey = process.env.WEAVIATE_API_KEY;
+  if (!apiKey) throw new Error("WEAVIATE_API_KEY is not set");
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${apiKey}`,
+  };
+};
 
 export async function initSchema() {
-  const existing = await fetch(`${base()}/v1/schema/Document`);
+  const existing = await fetch(`${base()}/v1/schema/Document`, { headers: headers() });
   if (existing.ok) return { status: "already_exists" };
 
   const res = await fetch(`${base()}/v1/schema`, {
     method: "POST",
-    headers,
+    headers: headers(),
     body: JSON.stringify({
       class: "Document",
       vectorizer: "none",
@@ -41,7 +48,7 @@ export async function addDocument(doc: {
 }) {
   const res = await fetch(`${base()}/v1/objects`, {
     method: "POST",
-    headers,
+    headers: headers(),
     body: JSON.stringify({
       class: "Document",
       properties: {
@@ -77,7 +84,7 @@ export async function batchAddDocuments(
 
   const res = await fetch(`${base()}/v1/batch/objects`, {
     method: "POST",
-    headers,
+    headers: headers(),
     body: JSON.stringify({ objects }),
   });
 
@@ -117,7 +124,7 @@ export async function searchDocuments(
 
   const res = await fetch(`${base()}/v1/graphql`, {
     method: "POST",
-    headers,
+    headers: headers(),
     body: JSON.stringify({ query }),
   });
 
@@ -161,7 +168,7 @@ export async function hybridSearch(
 
   const res = await fetch(`${base()}/v1/graphql`, {
     method: "POST",
-    headers,
+    headers: headers(),
     body: JSON.stringify({ query: gql }),
   });
 
