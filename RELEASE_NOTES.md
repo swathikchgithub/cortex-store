@@ -1,5 +1,12 @@
 # Release Notes
 
+## v0.1.3 — 2026-06-19
+
+### Security
+- Protected `POST /api/ingest` with bearer token auth — requires `INGEST_SECRET` header, returns 401 without it
+
+---
+
 ## v0.1.2 — 2026-06-19
 
 ### Features
